@@ -535,10 +535,20 @@ body {
   color: transparent;
 }
 
-.history-clear {
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
+}
+
+.history-actions .btn {
   font-size: 0.82rem;
   padding: 10px 18px;
+}
+
+.history-clear {
+  color: var(--danger);
 }
 
 .history-days {
@@ -683,7 +693,8 @@ body {
   .history-summary { padding: 20px; gap: 14px; }
   .summary-stat { padding-right: 14px; }
   .summary-value { font-size: 1.15rem; }
-  .history-clear { width: 100%; margin-left: 0; }
+  .history-actions { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  .history-actions .btn { flex: 1; min-width: 100px; }
 
   .day-group { padding: 16px 18px; }
   .day-sessions li { font-size: 0.78rem; padding: 9px 12px; }

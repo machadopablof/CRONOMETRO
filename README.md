@@ -21,6 +21,7 @@ Sistema web de **cronômetro** (stopwatch) e **temporizador** (countdown) com la
 - Card "Estudado hoje" ao lado do Temporizador, com a lista de sessões do dia
 - Aba "Estudos" com totais de hoje, dos últimos 7 dias e geral, além do histórico completo agrupado por dia
 - Dados salvos no `localStorage` do navegador (não saem do seu dispositivo); botão para limpar o histórico
+- Exportar/importar o histórico como arquivo `.json`, para fazer backup ou levar os dados para outro navegador/dispositivo (ex.: guardando o arquivo no GitHub manualmente)
 
 **Geral**
 - Tema claro/escuro com preferência salva no navegador

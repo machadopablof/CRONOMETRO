@@ -66,7 +66,7 @@
       osc.type = 'sine';
       osc.frequency.value = freq;
       gain.gain.setValueAtTime(0.0001, audioCtx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.4, audioCtx.currentTime + delay + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + delay + duration);
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(audioCtx.currentTime + delay);
@@ -270,6 +270,9 @@
   const histTotalEl = $('histTotal');
   const historyDaysEl = $('historyDays');
   const histClearBtn = $('histClearBtn');
+  const histExportBtn = $('histExportBtn');
+  const histImportBtn = $('histImportBtn');
+  const histImportInput = $('histImportInput');
 
   function localDateKey(date) {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -418,6 +421,86 @@
       renderHistory();
       showToast('Histórico apagado.');
     }
+  });
+
+  histExportBtn.addEventListener('click', () => {
+    if (!studyLog.length) {
+      showToast('Nenhum estudo para exportar ainda.');
+      return;
+    }
+    const payload = {
+      app: 'conometro',
+      exportedAt: new Date().toISOString(),
+      sessions: studyLog,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conometro-estudos-${localDateKey(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Histórico exportado.');
+  });
+
+  function isValidSession(s) {
+    return s && typeof s.date === 'string' && typeof s.start === 'number' &&
+      typeof s.end === 'number' && typeof s.durationMs === 'number';
+  }
+
+  histImportBtn.addEventListener('click', () => histImportInput.click());
+
+  histImportInput.addEventListener('change', () => {
+    const file = histImportInput.files[0];
+    histImportInput.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (e) {
+        showToast('Arquivo inválido: não é um JSON válido.');
+        return;
+      }
+
+      const incoming = Array.isArray(data) ? data : Array.isArray(data.sessions) ? data.sessions : null;
+      if (!incoming || !incoming.every(isValidSession)) {
+        showToast('Arquivo inválido: formato de histórico não reconhecido.');
+        return;
+      }
+
+      const existingKeys = new Set(studyLog.map((s) => `${s.start}-${s.end}-${s.durationMs}`));
+      let added = 0;
+      incoming.forEach((s) => {
+        const key = `${s.start}-${s.end}-${s.durationMs}`;
+        if (existingKeys.has(key)) return;
+        existingKeys.add(key);
+        studyLog.push({
+          date: s.date,
+          start: s.start,
+          end: s.end,
+          durationMs: s.durationMs,
+          partial: !!s.partial,
+        });
+        added++;
+      });
+
+      if (!added) {
+        showToast('Nada novo para importar (sessões já existiam).');
+        return;
+      }
+
+      studyLog.sort((a, b) => a.start - b.start);
+      saveStudyLog();
+      renderTodayCard();
+      renderHistory();
+      showToast(`${added} sessão(ões) importada(s).`);
+    };
+    reader.readAsText(file);
   });
 
   /* ============================================================
