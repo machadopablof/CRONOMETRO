@@ -136,7 +136,12 @@
             <span class="summary-label">Total</span>
             <span class="summary-value" id="histTotal">00:00:00</span>
           </div>
-          <button class="btn btn-ghost history-clear" id="histClearBtn">Limpar histórico</button>
+          <div class="history-actions">
+            <button class="btn btn-ghost" id="histExportBtn">Exportar</button>
+            <button class="btn btn-ghost" id="histImportBtn">Importar</button>
+            <input type="file" id="histImportInput" accept="application/json" hidden>
+            <button class="btn btn-ghost history-clear" id="histClearBtn">Limpar histórico</button>
+          </div>
         </div>
 
         <div class="history-days" id="historyDays">
