@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cronômetro & Temporizador</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='55' r='40' fill='%237c9dff'/%3E%3Ccircle cx='50' cy='55' r='40' fill='none'/%3E%3Cpath d='M50 55 L50 30 M50 55 L68 62' stroke='%230b0e17' stroke-width='7' stroke-linecap='round' fill='none'/%3E%3Crect x='40' y='6' width='20' height='10' rx='4' fill='%2363e6c4'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="app">
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">⏱</span>
+        <span class="brand-name">Conometro</span>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Modo">
+        <button class="tab active" data-tab="stopwatch" role="tab" aria-selected="true">Cronômetro</button>
+        <button class="tab" data-tab="timer" role="tab" aria-selected="false">Temporizador</button>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" title="Alternar tema" aria-label="Alternar tema">🌙</button>
+    </header>
+
+    <main class="stage">
+      <!-- ===================== CRONÔMETRO ===================== -->
+      <section class="panel active" id="panel-stopwatch">
+        <div class="clock-card">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 300 300">
+              <circle class="ring-track" cx="150" cy="150" r="138"></circle>
+              <circle class="ring-progress" id="swRing" cx="150" cy="150" r="138"></circle>
+            </svg>
+            <div class="clock-readout">
+              <div class="time" id="swTime">00:00:00</div>
+              <div class="ms" id="swMs">.00</div>
+              <div class="status-pill" id="swStatus">Pronto</div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="btn btn-ghost" id="swLapBtn" disabled>Volta</button>
+            <button class="btn btn-primary" id="swStartBtn">Iniciar</button>
+            <button class="btn btn-ghost" id="swResetBtn" disabled>Zerar</button>
+          </div>
+          <p class="hint">Espaço para iniciar/pausar · L para marcar volta · R para zerar</p>
+        </div>
+
+        <div class="laps-card" id="lapsCard">
+          <div class="laps-head">
+            <h3>Voltas</h3>
+            <span class="laps-count" id="lapsCount">0</span>
+          </div>
+          <ul class="laps-list" id="lapsList">
+            <li class="laps-empty">Nenhuma volta registrada ainda.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ===================== TEMPORIZADOR ===================== -->
+      <section class="panel" id="panel-timer">
+        <div class="clock-card">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 300 300">
+              <circle class="ring-track" cx="150" cy="150" r="138"></circle>
+              <circle class="ring-progress timer-ring" id="tmRing" cx="150" cy="150" r="138"></circle>
+            </svg>
+            <div class="clock-readout">
+              <div class="time" id="tmTime">00:00:00</div>
+              <div class="status-pill" id="tmStatus">Defina o tempo</div>
+            </div>
+          </div>
+
+          <div class="time-inputs" id="tmInputs">
+            <div class="time-field">
+              <input type="number" id="tmHours" min="0" max="23" value="0" inputmode="numeric">
+              <label>horas</label>
+            </div>
+            <span class="colon">:</span>
+            <div class="time-field">
+              <input type="number" id="tmMinutes" min="0" max="59" value="5" inputmode="numeric">
+              <label>min</label>
+            </div>
+            <span class="colon">:</span>
+            <div class="time-field">
+              <input type="number" id="tmSeconds" min="0" max="59" value="0" inputmode="numeric">
+              <label>seg</label>
+            </div>
+          </div>
+
+          <div class="presets">
+            <button class="chip" data-secs="60">1 min</button>
+            <button class="chip" data-secs="300">5 min</button>
+            <button class="chip" data-secs="600">10 min</button>
+            <button class="chip" data-secs="900">15 min</button>
+            <button class="chip" data-secs="1800">30 min</button>
+          </div>
+
+          <div class="controls">
+            <button class="btn btn-ghost" id="tmAddBtn">+1 min</button>
+            <button class="btn btn-primary" id="tmStartBtn">Iniciar</button>
+            <button class="btn btn-ghost" id="tmResetBtn">Zerar</button>
+          </div>
+          <p class="hint">Espaço para iniciar/pausar · R para zerar</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
