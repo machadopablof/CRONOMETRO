@@ -23,6 +23,7 @@
       <nav class="tabs" role="tablist" aria-label="Modo">
         <button class="tab active" data-tab="stopwatch" role="tab" aria-selected="true">Cronômetro</button>
         <button class="tab" data-tab="timer" role="tab" aria-selected="false">Temporizador</button>
+        <button class="tab" data-tab="history" role="tab" aria-selected="false">Estudos</button>
       </nav>
       <button class="theme-toggle" id="themeToggle" title="Alternar tema" aria-label="Alternar tema">🌙</button>
     </header>
@@ -107,6 +108,39 @@
             <button class="btn btn-ghost" id="tmResetBtn">Zerar</button>
           </div>
           <p class="hint">Espaço para iniciar/pausar · R para zerar</p>
+        </div>
+
+        <div class="laps-card" id="todayCard">
+          <div class="laps-head">
+            <h3>Estudado hoje</h3>
+            <span class="laps-count" id="todayTotal">00:00:00</span>
+          </div>
+          <ul class="day-sessions" id="todayList">
+            <li class="laps-empty">Nenhuma sessão registrada hoje.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ===================== HISTÓRICO DE ESTUDOS ===================== -->
+      <section class="panel" id="panel-history">
+        <div class="history-summary">
+          <div class="summary-stat">
+            <span class="summary-label">Hoje</span>
+            <span class="summary-value" id="histToday">00:00:00</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-label">Últimos 7 dias</span>
+            <span class="summary-value" id="histWeek">00:00:00</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-label">Total</span>
+            <span class="summary-value" id="histTotal">00:00:00</span>
+          </div>
+          <button class="btn btn-ghost history-clear" id="histClearBtn">Limpar histórico</button>
+        </div>
+
+        <div class="history-days" id="historyDays">
+          <p class="laps-empty history-empty">Nenhum estudo registrado ainda. Use o Temporizador para começar a estudar — cada sessão concluída ou interrompida é salva aqui automaticamente.</p>
         </div>
       </section>
     </main>

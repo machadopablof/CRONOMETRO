@@ -32,6 +32,13 @@
   const panels = {
     stopwatch: $('panel-stopwatch'),
     timer: $('panel-timer'),
+    history: $('panel-history'),
+  };
+
+  const TAB_TITLES = {
+    stopwatch: 'Cronômetro · Conometro',
+    timer: 'Temporizador · Conometro',
+    history: 'Estudos · Conometro',
   };
 
   function activateTab(name) {
@@ -41,7 +48,8 @@
       t.setAttribute('aria-selected', String(active));
     });
     Object.entries(panels).forEach(([key, el]) => el.classList.toggle('active', key === name));
-    document.title = name === 'timer' ? 'Temporizador · Conometro' : 'Cronômetro · Conometro';
+    document.title = TAB_TITLES[name] || 'Conometro';
+    if (name === 'history') renderHistory();
   }
 
   tabs.forEach((t) => t.addEventListener('click', () => activateTab(t.dataset.tab)));
@@ -235,6 +243,184 @@
   swResetBtn.addEventListener('click', resetStopwatch);
 
   /* ============================================================
+   *  HISTÓRICO DE ESTUDOS
+   * ========================================================== */
+  const STUDY_LOG_KEY = 'conometro-study-log';
+  const MIN_SESSION_MS = 3000; // ignora sessões residuais menores que 3s
+
+  function loadStudyLog() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STUDY_LOG_KEY));
+      return Array.isArray(raw) ? raw : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveStudyLog() {
+    localStorage.setItem(STUDY_LOG_KEY, JSON.stringify(studyLog));
+  }
+
+  let studyLog = loadStudyLog();
+
+  const todayTotalEl = $('todayTotal');
+  const todayListEl = $('todayList');
+  const histTodayEl = $('histToday');
+  const histWeekEl = $('histWeek');
+  const histTotalEl = $('histTotal');
+  const historyDaysEl = $('historyDays');
+  const histClearBtn = $('histClearBtn');
+
+  function localDateKey(date) {
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  function formatDuration(ms) {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const s = totalSec % 60;
+    const m = Math.floor(totalSec / 60) % 60;
+    const h = Math.floor(totalSec / 3600);
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  function formatClock(ms) {
+    return new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function dayLabel(dateKey) {
+    const [y, mo, d] = dateKey.split('-').map(Number);
+    const date = new Date(y, mo - 1, d);
+    if (dateKey === localDateKey(new Date())) return 'Hoje';
+    if (dateKey === localDateKey(new Date(Date.now() - 86400000))) return 'Ontem';
+    return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+
+  // Tempo ainda não persistido da sessão de estudo em andamento (contando o trecho ativo atual)
+  function liveSessionMs() {
+    if (!tm.sessionStart) return 0;
+    let ms = tm.studiedMs;
+    if (tm.lastResumeAt) ms += Date.now() - tm.lastResumeAt;
+    return ms;
+  }
+
+  function computeTodayMs() {
+    const todayKey = localDateKey(new Date());
+    let ms = studyLog.filter((s) => s.date === todayKey).reduce((sum, s) => sum + s.durationMs, 0);
+    if (tm.sessionStart && localDateKey(new Date(tm.sessionStart)) === todayKey) ms += liveSessionMs();
+    return ms;
+  }
+
+  function computeWeekMs() {
+    const weekAgo = Date.now() - 7 * 86400000;
+    let ms = studyLog.filter((s) => s.start >= weekAgo).reduce((sum, s) => sum + s.durationMs, 0);
+    ms += liveSessionMs();
+    return ms;
+  }
+
+  function computeTotalMs() {
+    return studyLog.reduce((sum, s) => sum + s.durationMs, 0) + liveSessionMs();
+  }
+
+  function sessionRowHtml(s) {
+    return `<li>
+      <span class="session-range">${formatClock(s.start)}–${formatClock(s.end)}</span>
+      <span class="session-duration${s.partial ? ' partial' : ''}">${formatDuration(s.durationMs)}</span>
+    </li>`;
+  }
+
+  function addStudySession(startMs, endMs, durationMs, partial) {
+    if (durationMs < MIN_SESSION_MS) return;
+    studyLog.push({
+      date: localDateKey(new Date(startMs)),
+      start: startMs,
+      end: endMs,
+      durationMs: Math.round(durationMs),
+      partial: !!partial,
+    });
+    saveStudyLog();
+    renderTodayCard();
+    renderHistory();
+    if (partial && durationMs >= 60000) {
+      showToast(`📚 Sessão de estudo registrada: ${formatDuration(durationMs)}`);
+    }
+  }
+
+  function renderTodayCard() {
+    const todayKey = localDateKey(new Date());
+    const sessions = studyLog.filter((s) => s.date === todayKey).sort((a, b) => a.start - b.start);
+    todayTotalEl.textContent = formatDuration(computeTodayMs());
+
+    const hasLive = tm.sessionStart && localDateKey(new Date(tm.sessionStart)) === todayKey;
+    if (!sessions.length && !hasLive) {
+      todayListEl.innerHTML = '<li class="laps-empty">Nenhuma sessão registrada hoje.</li>';
+      return;
+    }
+
+    let html = sessions.slice().reverse().map(sessionRowHtml).join('');
+    if (hasLive) {
+      html = `<li>
+        <span class="session-range">${formatClock(tm.sessionStart)}–agora</span>
+        <span class="session-duration partial">${formatDuration(liveSessionMs())}</span>
+      </li>` + html;
+    }
+    todayListEl.innerHTML = html;
+  }
+
+  function renderHistory() {
+    histTodayEl.textContent = formatDuration(computeTodayMs());
+    histWeekEl.textContent = formatDuration(computeWeekMs());
+    histTotalEl.textContent = formatDuration(computeTotalMs());
+
+    if (!studyLog.length) {
+      historyDaysEl.innerHTML = '<p class="laps-empty history-empty">Nenhum estudo registrado ainda. Use o Temporizador para começar a estudar — cada sessão concluída ou interrompida é salva aqui automaticamente.</p>';
+      return;
+    }
+
+    const groups = {};
+    studyLog.forEach((s) => {
+      (groups[s.date] = groups[s.date] || []).push(s);
+    });
+
+    const dateKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+    historyDaysEl.innerHTML = dateKeys
+      .map((key) => {
+        const sessions = groups[key].slice().sort((a, b) => a.start - b.start);
+        const dayTotal = sessions.reduce((sum, s) => sum + s.durationMs, 0);
+        const rows = sessions.slice().reverse().map(sessionRowHtml).join('');
+        return `<div class="day-group">
+          <div class="day-head">
+            <span class="day-name">${dayLabel(key)}</span>
+            <span class="day-total">${formatDuration(dayTotal)}</span>
+          </div>
+          <ul class="day-sessions">${rows}</ul>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function updateLiveStudyStats() {
+    todayTotalEl.textContent = formatDuration(computeTodayMs());
+    histTodayEl.textContent = formatDuration(computeTodayMs());
+    histWeekEl.textContent = formatDuration(computeWeekMs());
+    histTotalEl.textContent = formatDuration(computeTotalMs());
+  }
+
+  histClearBtn.addEventListener('click', () => {
+    if (!studyLog.length) {
+      showToast('Histórico já está vazio.');
+      return;
+    }
+    if (confirm('Apagar todo o histórico de estudos? Essa ação não pode ser desfeita.')) {
+      studyLog = [];
+      saveStudyLog();
+      renderTodayCard();
+      renderHistory();
+      showToast('Histórico apagado.');
+    }
+  });
+
+  /* ============================================================
    *  TEMPORIZADOR
    * ========================================================== */
   const tm = {
@@ -243,6 +429,9 @@
     remainingMs: 0,
     endAt: 0,
     interval: null,
+    sessionStart: null, // timestamp (ms) de quando a sessão de estudo atual começou
+    studiedMs: 0,        // tempo ativo acumulado da sessão atual (exclui pausas)
+    lastResumeAt: null,  // timestamp do último "iniciar/continuar"
   };
 
   const tmTimeEl = $('tmTime');
@@ -308,6 +497,7 @@
     tm.remainingMs = Math.max(0, tm.endAt - Date.now());
     tmTimeEl.textContent = formatTimer(tm.remainingMs);
     renderTimerRing();
+    updateLiveStudyStats();
 
     if (tm.remainingMs <= 0) {
       finishTimer();
@@ -329,6 +519,8 @@
 
     tm.running = true;
     tm.endAt = Date.now() + tm.remainingMs;
+    if (!tm.sessionStart) tm.sessionStart = Date.now();
+    tm.lastResumeAt = Date.now();
     tmInputs.classList.add('locked');
     tmInputs.querySelectorAll('input').forEach((i) => (i.disabled = true));
     tmWrap.classList.add('pulsing');
@@ -340,16 +532,38 @@
     tm.interval = setInterval(tickTimer, 200);
   }
 
+  function accumulateStudiedMs() {
+    if (tm.lastResumeAt) {
+      tm.studiedMs += Date.now() - tm.lastResumeAt;
+      tm.lastResumeAt = null;
+    }
+  }
+
   function pauseTimer() {
     tm.running = false;
     clearInterval(tm.interval);
+    accumulateStudiedMs();
     tmWrap.classList.remove('pulsing');
     tmStartBtn.textContent = 'Continuar';
     tmStartBtn.classList.remove('is-running');
     setTmStatus('Pausado', 'paused');
+    renderTodayCard();
+  }
+
+  function endStudySession(partial) {
+    accumulateStudiedMs();
+    const start = tm.sessionStart;
+    const duration = tm.studiedMs;
+    tm.sessionStart = null;
+    tm.studiedMs = 0;
+    if (start && duration > 0) {
+      addStudySession(start, Date.now(), duration, partial);
+    }
   }
 
   function resetTimer() {
+    endStudySession(true);
+    renderTodayCard();
     tm.running = false;
     tm.totalMs = 0;
     tm.remainingMs = 0;
@@ -365,6 +579,8 @@
   }
 
   function finishTimer() {
+    endStudySession(false);
+    renderTodayCard();
     tm.running = false;
     clearInterval(tm.interval);
     tm.remainingMs = 0;
@@ -378,8 +594,8 @@
     setTmStatus('Concluído!', 'done');
     setTimeout(() => tmWrap.classList.remove('shake'), 500);
     playAlarm();
-    showToast('⏰ Tempo esgotado!');
-    notify('Conometro', 'O temporizador chegou a zero.');
+    showToast('⏰ Tempo esgotado! Sessão de estudo registrada.');
+    notify('Conometro', 'O temporizador chegou a zero. Sessão de estudo registrada.');
     tm.totalMs = 0;
   }
 
@@ -404,6 +620,9 @@
     });
   });
 
+  renderTodayCard();
+  renderHistory();
+
   /* ============================================================
    *  Atalhos de teclado
    * ========================================================== */
@@ -415,6 +634,7 @@
     }
 
     const activeTab = document.querySelector('.tab.active').dataset.tab;
+    if (activeTab === 'history') return;
 
     if (e.code === 'Space') {
       e.preventDefault();

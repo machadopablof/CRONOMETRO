@@ -16,6 +16,12 @@ Sistema web de **cronômetro** (stopwatch) e **temporizador** (countdown) com la
 - Anel de progresso regressivo, com aviso visual nos últimos 10 segundos
 - Alarme sonoro (sintetizado via Web Audio, sem arquivos externos), notificação do navegador e efeito visual ao finalizar
 
+**Estudos**
+- Toda sessão do Temporizador (concluída ou interrompida) é registrada automaticamente, com horário de início/fim e duração
+- Card "Estudado hoje" ao lado do Temporizador, com a lista de sessões do dia
+- Aba "Estudos" com totais de hoje, dos últimos 7 dias e geral, além do histórico completo agrupado por dia
+- Dados salvos no `localStorage` do navegador (não saem do seu dispositivo); botão para limpar o histórico
+
 **Geral**
 - Tema claro/escuro com preferência salva no navegador
 - Atalhos de teclado: `Espaço` (iniciar/pausar), `L` (marcar volta), `R` (zerar)
